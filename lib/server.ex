@@ -39,7 +39,6 @@ defmodule ExKiwiplan.Server do
     {:ok, client} = :gen_tcp.accept(socket)
     unless pid == nil, do: Process.exit(pid, :kill)
     pid = spawn(fn -> serve(client, callback) end)
-    IO.inspect(client)
     :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket, callback, pid)
   end
