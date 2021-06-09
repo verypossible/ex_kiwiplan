@@ -5,12 +5,12 @@ defmodule ExKiwiplan.Server do
   @read_timeout 60_000
 
   def start_link(port: port, handler: handler) do
-    pid = spawn(accept(port, handler))
+    pid = spawn(fn -> accept(port, handler) end)
     {:ok, pid}
   end
 
   def start_link(_) do
-    pid = spawn(accept(4040, &IO.inspect/1))
+    pid = spawn(fn -> accept(4040, &IO.inspect/1) end)
     {:ok, pid}
   end
 
@@ -19,8 +19,7 @@ defmodule ExKiwiplan.Server do
       id: __MODULE__,
       start: {__MODULE__, :start_link, [opts]},
       type: :worker,
-      restart: :permanent,
-      shutdown: 500
+      restart: :permanent
     }
   end
 
@@ -36,21 +35,18 @@ defmodule ExKiwiplan.Server do
     loop_acceptor(socket, callback)
   end
 
-  defp loop_acceptor(socket, callback) do
+  defp loop_acceptor(socket, callback, pid \\ nil) do
     {:ok, client} = :gen_tcp.accept(socket)
-    serve(socket, callback)
-
-    {:ok, pid} =
-      Task.Supervisor.start_child(Server.TaskSupervisor, fn -> serve(client, callback) end)
-
-    Logger.info("Connected to client #{inspect(client)} on pid #{pid}")
+    unless pid == nil, do: Process.exit(pid, :kill)
+    pid = spawn(fn -> serve(client, callback) end)
+    IO.inspect(client)
     :ok = :gen_tcp.controlling_process(client, pid)
-    loop_acceptor(socket, callback)
+    loop_acceptor(socket, callback, pid)
   end
 
-  defp serve(socket, callback, buffer \\ "") do
+  defp serve(client, callback, buffer \\ "") do
     {frame, buffer} =
-      case read_line(socket) do
+      case read_line(client) do
         {:ok, data} ->
           buffer = buffer <> data
 
@@ -81,8 +77,8 @@ defmodule ExKiwiplan.Server do
 
     Logger.info("Frame: #{inspect(frame)}, Buffer: #{inspect(buffer)}")
 
-    write_line(socket, frame)
-    serve(socket, callback, buffer)
+    write_line(client, frame)
+    serve(client, callback, buffer)
   end
 
   defp read_line(socket) do
