@@ -4,8 +4,8 @@ defmodule ExKiwiplan.Server do
 
   @read_timeout 60_000
 
-  def start_link(port: port, handler: handler) do
-    pid = spawn(fn -> accept(port, handler) end)
+  def start_link(port: port, callback: callback) do
+    pid = spawn(fn -> accept(port, callback) end)
     {:ok, pid}
   end
 
