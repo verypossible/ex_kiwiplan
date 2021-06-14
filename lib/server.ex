@@ -1,6 +1,6 @@
 defmodule ExKiwiplan.Server do
   require Logger
-  alias ExKiwiplan.VLink
+  alias ExKiwiplan.KCCP
 
   @read_timeout 60_000
 
@@ -49,7 +49,7 @@ defmodule ExKiwiplan.Server do
         {:ok, data} ->
           buffer = buffer <> data
 
-          case VLink.extract_frame(buffer) do
+          case KCCP.extract_frame(buffer) do
             {"", ""} ->
               {"", ""}
 
@@ -57,15 +57,15 @@ defmodule ExKiwiplan.Server do
               {"", buffer}
 
             {frame, ""} ->
-              parsed_frame = VLink.parse_frame!(frame)
+              parsed_frame = KCCP.parse_frame!(frame)
               callback.(parsed_frame)
-              ack = VLink.ack_message(parsed_frame)
+              ack = KCCP.ack_message(parsed_frame)
               {ack, ""}
 
             {frame, buffer} ->
-              parsed_frame = VLink.parse_frame!(frame)
+              parsed_frame = KCCP.parse_frame!(frame)
               callback.(parsed_frame)
-              ack = VLink.ack_message(parsed_frame)
+              ack = KCCP.ack_message(parsed_frame)
 
               {ack, buffer}
           end
