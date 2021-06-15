@@ -48,27 +48,8 @@ defmodule ExKiwiplan.Server do
       case read_line(client) do
         {:ok, data} ->
           buffer = buffer <> data
-
-          case KCCP.extract_frame(buffer) do
-            {"", ""} ->
-              {"", ""}
-
-            {"", buffer} ->
-              {"", buffer}
-
-            {frame, ""} ->
-              parsed_frame = KCCP.parse_frame!(frame)
-              callback.(parsed_frame)
-              ack = KCCP.ack_message(parsed_frame)
-              {ack, ""}
-
-            {frame, buffer} ->
-              parsed_frame = KCCP.parse_frame!(frame)
-              callback.(parsed_frame)
-              ack = KCCP.ack_message(parsed_frame)
-
-              {ack, buffer}
-          end
+          frame = KCCP.extract_frame(buffer)
+          handle_frame(frame, callback)
 
         {:error, _} = err ->
           {err, buffer}
@@ -78,6 +59,17 @@ defmodule ExKiwiplan.Server do
 
     write_line(client, frame)
     serve(client, callback, buffer)
+  end
+
+  defp handle_frame({"", ""}, _callback), do: {"", ""}
+  defp handle_frame({"", buffer}, _callback), do: {"", buffer}
+
+  defp handle_frame({frame, buffer}, callback) do
+    parsed_frame = KCCP.parse_frame!(frame)
+    callback.(parsed_frame)
+    ack = KCCP.ack_message(parsed_frame)
+
+    {ack, buffer}
   end
 
   defp read_line(socket) do
