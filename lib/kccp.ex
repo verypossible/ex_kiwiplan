@@ -2,7 +2,8 @@ defmodule ExKiwiplan.KCCP do
   require Logger
   @stx 2
   @etx 3
-  @uppercase_chars "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  @uppercase_chars 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  @numeric_chars '1234567890'
   @fixed_length_elements %{
     "ON" => 20,
     "OS" => 20,
@@ -22,7 +23,16 @@ defmodule ExKiwiplan.KCCP do
     "ET" => 6,
     "CD" => 6,
     "CT" => 6,
-    "RB" => 4
+    "C0" => 6,
+    "C1" => 6,
+    "C2" => 6,
+    "C3" => 6,
+    "C4" => 6,
+    "C5" => 6,
+    "C6" => 6,
+    "C7" => 6,
+    "C8" => 6,
+    "C9" => 6
   }
 
   def extract_frame(<<@stx, data::binary>>) do
@@ -84,7 +94,7 @@ defmodule ExKiwiplan.KCCP do
 
             case Stream.chunk_every(data_chars, 2, 1, :discard)
                  |> Stream.map(&List.to_string/1)
-                 |> Enum.find_index(&uppercase_alpha?/1) do
+                 |> Enum.find_index(&is_element_key?/1) do
               nil ->
                 Map.put(parsed, element, List.to_string(data_chars))
 
@@ -98,15 +108,19 @@ defmodule ExKiwiplan.KCCP do
                   Map.put(parsed, element, List.to_string(data_chars))
                 )
             end
+
           length ->
-            parsed = Map.put(
-              parsed, 
-              element, 
-              data |> String.slice(0..length-1) |> String.trim()
-            )
+            parsed =
+              Map.put(
+                parsed,
+                element,
+                data |> String.slice(0..(length - 1)) |> String.trim()
+              )
+
             case String.slice(data, length..-1) do
               "" ->
                 parsed
+
               remainder ->
                 parse_data(remainder, parsed)
             end
@@ -134,17 +148,17 @@ defmodule ExKiwiplan.KCCP do
     |> Enum.reduce(
       "",
       fn {element, value}, acc ->
-        acc <> element <> case @fixed_length_elements[element] do
-          nil -> value
-          length -> String.pad_trailing(value, length)
-        end
+        acc <>
+          element <>
+          case @fixed_length_elements[element] do
+            nil -> value
+            length -> String.pad_trailing(value, length)
+          end
       end
     )
   end
 
-  def uppercase_alpha?(str) do
-    str
-    |> String.codepoints()
-    |> Enum.all?(&String.contains?(@uppercase_chars, &1))
+  defp is_element_key?(<<char_1, char_2>>) do
+    char_1 in @uppercase_chars and (char_2 in @numeric_chars or char_2 in @uppercase_chars)
   end
 end
