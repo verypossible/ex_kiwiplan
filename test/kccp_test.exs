@@ -2,7 +2,7 @@ defmodule KCCPTest do
   use ExUnit.Case
   @stx 2
   @etx 3
-  @sample_message_parsed %{      
+  @sample_message_parsed %{
     command: "AP",
     data: %{
       "BC" => "194",
@@ -16,7 +16,7 @@ defmodule KCCPTest do
       "LP" => "5",
       "NL" => "2",
       "NT" => "2",
-      "NW" => "1C1",
+      "NW" => "1",
       "OB" => "DIECUT",
       "OC" => "Agricola T",
       "OI" => "3388",
@@ -29,8 +29,8 @@ defmodule KCCPTest do
       "PQ" => "250",
       "PT" => "TS",
       "QS" => "16793",
-      "RB" => "R",
-      "SB" => "50"
+      "SB" => "50",
+      "C1" => "RBR"
     },
     message_id: "03"
   }
